@@ -60,12 +60,13 @@ namespace Assignment
                     {
                         if (airline.Name == prefix)
                         {
-                            Airline Final_Airline = airline;
+                            return airline;
                         }
                     }
             
                 }
             }
+            return null;
         }
 
         public void PrintAirlineFees() { }
