@@ -1,4 +1,5 @@
 ﻿using Assignment;
+
 void CreateAirlines(Terminal terminal)
 {
     string[] file =  File.ReadAllLines("airlines.csv");
