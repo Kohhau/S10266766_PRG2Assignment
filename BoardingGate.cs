@@ -8,13 +8,12 @@ public class BoardingGate
     public bool SupportsLWTT { get; set; }
     public Flight Flight { get; set; }
 
-    public BoardingGate(string gateName, bool supportsDDJB, bool suppportsCFFT, bool supportsLWTT, Flight flight)
+    public BoardingGate(string gateName, bool supportsDDJB, bool suppportsCFFT, bool supportsLWTT)
     {
         GateName = gateName;
         SuppportsCFFT = suppportsCFFT;
         SupportsDDJB = supportsDDJB;
         SupportsLWTT = supportsLWTT;
-        Flight = flight;
     }
 
     public BoardingGate(Flight flight)
