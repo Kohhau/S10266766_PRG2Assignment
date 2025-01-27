@@ -1,4 +1,9 @@
-﻿using Assignment;
+﻿//=============================
+// Student Number: S10266766
+// Student Name: Koh Hau
+// Partner Name: Haziq Hairil 
+//=============================
+using Assignment;
 
 void CreateAirlines(Terminal terminal)
 {
