@@ -20,7 +20,7 @@ public class Terminal
 
     public bool AddAirline(Airline airline)
     {
-        return Airlines.TryAdd(airline.Name, airline);
+        return Airlines.TryAdd(airline.Code, airline);
     }
 
     public bool AddBoardingGate(BoardingGate boardingGate)
