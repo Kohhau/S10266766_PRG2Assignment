@@ -26,11 +26,23 @@ void CreateBoardingGates(Terminal terminal)
 
 void CreateFlights(Terminal terminal)
 {
-    string[] file = File.ReadAllLines("flights.csv");
-    for (int i = 1; i < file.Length; i++)
+    using var reader = new StreamReader("flights.csv");
+    var line = reader.ReadLine();  // Skip header
+
+    while ((line = reader.ReadLine()) != null)
     {
+        var values = line.Split(",");
+        Flight f;
+
+        if (values[4] == "") { f = new NORMFlight(values[0], values[1], values[2], DateTime.Parse(values[3])); }
+        else if (values[4] == "LWTT") { f = new LWTTFlight(values[0], values[1], values[2], DateTime.Parse(values[3])); }
+        else if (values[4] == "DDJB") { f = new DDJBFlight(values[0], values[1], values[2], DateTime.Parse(values[3])); }
+        else { f = new CFFTFlight(values[0], values[1], values[2], DateTime.Parse(values[3])); }
+
+        terminal.GetAirlineFromFlight(f).AddFlight(f);
     }
 }
+
 Terminal terminal5 = new Terminal("Changi Airport Terminal 5");
 
 CreateAirlines(terminal5);
