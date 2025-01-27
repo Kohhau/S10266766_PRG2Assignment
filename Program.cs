@@ -47,3 +47,4 @@ Terminal terminal5 = new Terminal("Changi Airport Terminal 5");
 
 CreateAirlines(terminal5);
 CreateBoardingGates(terminal5);
+CreateFlights(terminal5);
