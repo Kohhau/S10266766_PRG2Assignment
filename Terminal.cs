@@ -9,7 +9,10 @@ public class Terminal
 {
     public string TerminalName { get; set; }
     public Dictionary<string, Airline> Airlines { get; set; } = [];
-    public Dictionary<string, Flight> Flights { get; set; } = [];
+    public Dictionary<string, Flight> Flights
+    {
+        get => Airlines.Values.SelectMany(a => a.Flights).ToDictionary(flight => flight.Key, flight => flight.Value);
+    }
     public Dictionary<string, BoardingGate> BoardingGates { get; set; } = [];
     public Dictionary<string, double> GateFees { get; set; } = [];
 
