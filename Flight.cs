@@ -3,9 +3,10 @@
 // Student Name: Koh Hau
 // Partner Name: Haziq Hairil 
 //=============================
+
 namespace Assignment;
 
-public abstract class Flight
+public abstract class Flight: IComparable<Flight>
 {
     public string FlightNumber { get; set; }
     public string Origin { get; set; }
@@ -43,6 +44,11 @@ public abstract class Flight
     public override string ToString()
     {
         return $"Flight No. : {FlightNumber}\nOrigin: {Origin}\nDestination: {Destination}\nExpected time of arrival: {ExpectedTime}\nStatus: {Status}";
+    }
+
+    public int CompareTo(Flight? other)
+    {
+        return ExpectedTime.CompareTo(other?.ExpectedTime);
     }
 }
 

@@ -39,7 +39,7 @@ while (true)
             break;
         case "5":
             Console.WriteLine();
-            // DisplayFullFlightDetails(terminal5);
+             DisplayFullFlightDetails(terminal5);
             break;
         case "6":
             Console.WriteLine();
@@ -47,7 +47,7 @@ while (true)
             break;
         case "7":
             Console.WriteLine();
-            // DisplayScheduledFlights(terminal5);
+             DisplayScheduledFlights(terminal5);
             break;
         case "8":
             return;
@@ -119,6 +119,23 @@ void DisplayBasicInformation(Terminal terminal)
 void DisplayBoardingGates(Terminal terminal)
 {
 
+}
+
+void DisplayFullFlightDetails(Terminal terminal)
+{
+
+}
+
+void DisplayScheduledFlights(Terminal terminal)
+{
+    var flights = terminal.Flights.Values.ToList().Order();
+
+    Console.WriteLine("Flight  Airline name        Origin              Destination         Time   Status    SR code  Gate");
+    foreach (var f in flights)
+    {
+        Console.Write($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19} {f.ExpectedTime,-6:HH:mm} ");
+        Console.WriteLine($"{f.Status,-9} {GetSpecialRequestCode(f) ?? "",-8} {GetBoardingGateForFlight(terminal, f)?.GateName ?? ""}");
+    }
 }
 
 //=======================================
@@ -317,6 +334,11 @@ string? GetSpecialRequestCode(Flight flight)
         CFFTFlight => "CFFT",
         _ => null
     };
+}
+
+BoardingGate? GetBoardingGateForFlight(Terminal terminal, Flight flight)
+{
+    return terminal.BoardingGates.Values.FirstOrDefault(g => g.Flight == flight);
 }
 
 void DisplayFlightInfoWithSRC(Terminal terminal, Flight flight)
