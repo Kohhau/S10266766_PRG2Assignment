@@ -1,6 +1,19 @@
 ﻿using Assignment;
 
-void CreateAirlines(Terminal terminal)
+Terminal terminal5 = new Terminal("Changi Airport Terminal 5");
+LoadAirlines(terminal5);
+LoadBoardingGates(terminal5);
+LoadFlights(terminal5);
+
+DisplayBasicInformation(terminal5);
+
+/**********************************************/
+/*                                            */
+/*   Loading data from CSVs (feature 1 & 2)   */
+/*                                            */
+/**********************************************/
+
+void LoadAirlines(Terminal terminal)
 {
     using var reader = new StreamReader("airlines.csv");
     var line = reader.ReadLine();  // Skip header
@@ -12,7 +25,7 @@ void CreateAirlines(Terminal terminal)
     }
 }
 
-void CreateBoardingGates(Terminal terminal)
+void LoadBoardingGates(Terminal terminal)
 {
     using var reader = new StreamReader("boardinggates.csv");
     var line = reader.ReadLine();  // Skip header
@@ -24,7 +37,7 @@ void CreateBoardingGates(Terminal terminal)
     }
 }
 
-void CreateFlights(Terminal terminal)
+void LoadFlights(Terminal terminal)
 {
     using var reader = new StreamReader("flights.csv");
     var line = reader.ReadLine();  // Skip header
@@ -43,8 +56,18 @@ void CreateFlights(Terminal terminal)
     }
 }
 
-Terminal terminal5 = new Terminal("Changi Airport Terminal 5");
+/**********************************************/
+/*                                            */
+/*   Displaying information (feature 3 & 4)   */
+/*                                            */
+/**********************************************/
 
-CreateAirlines(terminal5);
-CreateBoardingGates(terminal5);
-CreateFlights(terminal5);
+void DisplayBasicInformation(Terminal terminal)
+{
+    //                         Singapore Airlines 
+    Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time");
+
+    foreach (var a in terminal.Airlines.Values)
+        foreach (var f in a.Flights.Values)
+            Console.WriteLine($"{f.FlightNumber,-7} {a.Name,-19} {f.Origin,-19} {f.Destination,-19} {f.ExpectedTime.ToString("HH:mm")}");
+}
