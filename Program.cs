@@ -5,6 +5,7 @@
 //=============================
 
 using Assignment;
+using System.Text.RegularExpressions;
 
 Terminal terminal5 = new("Changi Airport Terminal 5");
 LoadAirlines(terminal5);
@@ -34,7 +35,7 @@ while (true)
             break;
         case "4":
             Console.WriteLine();
-            // CreateNewFlight(terminal5);
+            CreateNewFlight(terminal5);
             break;
         case "5":
             Console.WriteLine();
@@ -126,7 +127,7 @@ void DisplayBoardingGates(Terminal terminal)
 
 void AssignBoardingGateToFlight(Terminal terminal)
 {
-    var flight = InputFlight(terminal);
+    var flight = InputExistingFlightNumber(terminal);
     Console.WriteLine();
     DisplayFlightInfoWithSRC(terminal, flight);
     Console.WriteLine();
@@ -148,11 +149,46 @@ void AssignBoardingGateToFlight(Terminal terminal)
     Console.WriteLine($"Gate {gate.GateName} assigned to {flight.FlightNumber} successfully");
 }
 
+void CreateNewFlight(Terminal terminal)
+{
+    int numFlightsAdded = 0;
+    string continueChoice;
+    do
+    {
+        var flightNo = InputNewFlightNumber(terminal);
+        var (origin, destination) = InputOriginAndDestination();
+        var expectedTime = origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
+        var specialRequestCode = InputSpecialRequestCode();
+
+        Flight f = specialRequestCode switch
+        {
+            "LWTT" => new LWTTFlight(flightNo, origin, destination, expectedTime),
+            "DDJB" => new DDJBFlight(flightNo, origin, destination, expectedTime),
+            "CFFT" => new CFFTFlight(flightNo, origin, destination, expectedTime),
+            _ => new NORMFlight(flightNo, origin, destination, expectedTime)
+        };
+        terminal.GetAirlineFromFlight(f).AddFlight(f);
+        numFlightsAdded++;
+
+        using (var writer = new StreamWriter("flights.csv", append: true))
+        {
+            writer.WriteLine($"{f.FlightNumber},{f.Origin},{f.Destination},{f.ExpectedTime:hh:mm tt},{GetSpecialRequestCode(f) ?? ""}");
+        }
+
+        Console.Write("Add another flight [Y/N]? ");
+        continueChoice = Console.ReadLine()?.ToUpper() ?? "";
+        Console.WriteLine();
+    } while (continueChoice == "Y");
+
+    if (numFlightsAdded == 1) Console.WriteLine("Flight addded successfully");
+    else Console.WriteLine($"{numFlightsAdded} flights added successfully");
+}
+
 //==================
 // Input functions
 //==================
 
-Flight InputFlight(Terminal terminal)
+Flight InputExistingFlightNumber(Terminal terminal)
 {
     while (true)
     {
@@ -201,6 +237,71 @@ string InputFlightStatus()
                 break;
         }
     }
+}
+
+string InputNewFlightNumber(Terminal terminal)
+{
+    while (true)
+    {
+        Console.Write("Enter flight number: ");
+        var flightNo = Console.ReadLine() ?? "";
+
+        if (!Regex.IsMatch(flightNo, @"^[A-Z]{2}\s\d{3}$"))
+        {
+            Console.WriteLine("Invalid flight number; please try again. Use format \"AZ 123\".");
+            continue;
+        }
+
+        if (!terminal.Airlines.ContainsKey(flightNo[..2]))
+        {
+            Console.WriteLine("Invalid airline code; please try again.");
+            continue;
+        }
+
+        if (!terminal.Flights.ContainsKey(flightNo)) return flightNo;
+        Console.WriteLine("Flight number already exists; please try again.");
+    }
+}
+
+(string, string) InputOriginAndDestination()
+{
+    while (true)
+    {
+        Console.Write("Enter origin: ");
+        var origin = Console.ReadLine() ?? "";
+        Console.Write("Enter destination: ");
+        var destination = Console.ReadLine() ?? "";
+
+        if ((origin == "Singapore (SIN)" || destination == "Singapore (SIN)") && origin != destination)
+            return (origin, destination);
+
+        Console.WriteLine("Either origin or destination must be \"Singapore (SIN)\"; please try again.");
+    }
+}
+
+DateTime InputTime(string typeText)
+{
+    while (true)
+    {
+        Console.Write($"Enter {typeText} time: ");
+        try { return Convert.ToDateTime(Console.ReadLine()); }
+        catch (FormatException) { Console.WriteLine("Invalid time; please try again."); }
+    }
+}
+
+string? InputSpecialRequestCode()
+{
+    while (true)
+    {
+        Console.Write("Enter special request code, or leave blank for none: ");
+        var code = Console.ReadLine() ?? "";
+
+        if (code == "LWTT" || code == "DDJB" || code == "CFFT") return code;
+        if (code == "") return null;
+
+        Console.WriteLine("Invalid code; please try again.");
+    }
+
 }
 
 //===================
