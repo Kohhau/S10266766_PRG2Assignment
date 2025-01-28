@@ -69,10 +69,9 @@ void LoadFlights(Terminal terminal)
 
 void DisplayBasicInformation(Terminal terminal)
 {
-    //                         Singapore Airlines 
     Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time");
 
     foreach (var a in terminal.Airlines.Values)
         foreach (var f in a.Flights.Values)
-            Console.WriteLine($"{f.FlightNumber,-7} {a.Name,-19} {f.Origin,-19} {f.Destination,-19} {f.ExpectedTime.ToString("HH:mm")}");
+            Console.WriteLine($"{f.FlightNumber,-7} {a.Name,-19} {f.Origin,-19} {f.Destination,-19} {f.ExpectedTime:HH:mm}");
 }
