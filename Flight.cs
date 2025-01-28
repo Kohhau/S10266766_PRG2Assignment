@@ -1,4 +1,9 @@
-﻿namespace Assignment;
+﻿//=============================
+// Student Number: S10266766
+// Student Name: Koh Hau
+// Partner Name: Haziq Hairil 
+//=============================
+namespace Assignment;
 
 public abstract class Flight
 {
