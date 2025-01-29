@@ -118,12 +118,28 @@ void DisplayBasicInformation(Terminal terminal)
 
 void DisplayBoardingGates(Terminal terminal)
 {
-
+    Console.WriteLine("Boarding Gate     DDJB    CFFT    LWTT    Flight Number");
+    foreach (var boardinggate in terminal.BoardingGates.Values)
+    {
+        Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}{boardinggate.Flight}");
+    }
 }
 
 void DisplayFullFlightDetails(Terminal terminal)
 {
+    ListAirlines(terminal);
+    Airline airline = terminal.Airlines[InputAirLineCode()];
+    var flights = airline.Flights.Values.ToList().Order();
 
+    Console.WriteLine("Flight  Airline name        Origin              Destination");
+    foreach (var f in flights)
+    {
+        Console.WriteLine($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19}");
+    }
+    var flight = InputExistingAirlineFlightNumber(airline);
+    Console.WriteLine("Flight  Airline name        Origin              Destination         Time   Status    SR code  Gate");
+    Console.Write($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19} {flight.ExpectedTime,-6:HH:mm} ");
+    Console.WriteLine($"{flight.Status,-9} {GetSpecialRequestCode(flight) ?? "",-8} {GetBoardingGateForFlight(terminal, flight)?.GateName ?? ""}");
 }
 
 void DisplayScheduledFlights(Terminal terminal)
@@ -213,6 +229,17 @@ Flight InputExistingFlightNumber(Terminal terminal)
         var flightNo = Console.ReadLine() ?? "";
 
         if (terminal.Flights.TryGetValue(flightNo, out var f)) return f;
+        Console.WriteLine("Flight not found; please try again.");
+    }
+}
+Flight InputExistingAirlineFlightNumber(Airline airline)
+{
+    while (true)
+    {
+        Console.Write("Enter flight number: ");
+        var flightNo = Console.ReadLine() ?? "";
+
+        if (airline.Flights.TryGetValue(flightNo, out var f)) return f;
         Console.WriteLine("Flight not found; please try again.");
     }
 }
@@ -321,6 +348,22 @@ string? InputSpecialRequestCode()
 
 }
 
+string InputAirLineCode()
+{
+    string code = "";
+    while (true)
+    {
+        Console.Write("Input Flight Code...: ");
+        code = Console.ReadLine().ToUpper();
+        if (code.Length == 2) { break; }
+        else
+        {
+            Console.WriteLine("Invalid formatting");
+        }
+    }
+    return code;
+}
+
 //===================
 // Helper functions
 //===================
@@ -367,4 +410,13 @@ void DisplayMenu()
     Console.WriteLine("   with boarding gates assignments where applicable");
     Console.WriteLine("8) Exit");
     Console.WriteLine("------------------------------------------------------");
+}
+
+void ListAirlines(Terminal terminal)
+{
+    Console.WriteLine("Airline                  Code");
+    foreach (var airline in terminal.Airlines.Values)
+    {
+        Console.WriteLine($"{airline.Name,-25}{airline.Code}");
+    }
 }
