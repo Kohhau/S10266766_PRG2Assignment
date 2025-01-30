@@ -43,7 +43,7 @@ while (true)
             break;
         case "6":
             Console.WriteLine();
-            // ModifyFlightDetails(terminal5);
+            ModifyFlightDetails(terminal5);
             break;
         case "7":
             Console.WriteLine();
@@ -215,6 +215,61 @@ void CreateNewFlight(Terminal terminal)
 
     if (numFlightsAdded == 1) Console.WriteLine("Flight addded successfully");
     else Console.WriteLine($"{numFlightsAdded} flights added successfully");
+}
+
+void ModifyFlightDetails(Terminal terminal)
+{
+    ListAirlines(terminal);
+    var airline = terminal.Airlines[InputAirLineCode()];
+    var flights = airline.Flights.Values.ToList().Order();
+
+    Console.WriteLine("Flight  Airline name        Origin              Destination");
+    foreach (var f in flights)
+    {
+        Console.WriteLine($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19}");
+    }
+    Console.WriteLine("[1] Modify Existing Flight\n[2]Delete Existing Flights");
+    Console.Write("Input choice: ");
+    switch (Console.ReadLine())
+    {
+        case "1":
+            var flight = InputExistingAirlineFlightNumber(airline);
+            var (origin, destination) = InputOriginAndDestination();
+            var expectedTime = origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
+            var status = InputFlightStatus();
+            var specialRequestCode = InputSpecialRequestCode();
+            switch (specialRequestCode)
+            {
+                case "LWTT" : flight = (LWTTFlight)flight;
+                    return;
+                case "DDJB" : flight = (DDJBFlight)flight;
+                    return;
+                case "CFFT" : flight = (CFFTFlight) flight;
+                    return;
+                case null : flight = (NORMFlight)flight;
+                    return;
+            };
+            Console.WriteLine("Flight details updated...");
+            Console.WriteLine(flight);
+            return;
+
+
+        case "2":
+            Console.WriteLine("Delete a flight...");
+            var flightToDel = InputExistingAirlineFlightNumber(airline);
+            Console.Write("Are you sure? [Y/N]: ");
+            var confirmation = Console.ReadLine().ToUpper();
+            if (confirmation == "Y")
+            {
+                airline.RemoveFlight(flightToDel);
+            }
+            else
+            {
+                Console.WriteLine("Cancelled...");
+            }
+            DisplayScheduledFlights(terminal);
+            return;
+    }
 }
 
 //==================
