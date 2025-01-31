@@ -228,29 +228,82 @@ void ModifyFlightDetails(Terminal terminal)
     {
         Console.WriteLine($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19}");
     }
-    Console.WriteLine("[1] Modify Existing Flight\n[2]Delete Existing Flights");
+    Console.WriteLine("[1] Modify Existing Flight\n[2] Delete Existing Flights");
     Console.Write("Input choice: ");
     switch (Console.ReadLine())
     {
         case "1":
+            bool LWTT = true;
+            bool DDJB = true;
+            bool CFFT = true;
+            Flight new_flight;
             var flight = InputExistingAirlineFlightNumber(airline);
+            var flightNo = flight.FlightNumber;
+            foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+            {
+                if (boardingGate.Flight == flight)
+                {
+                    LWTT = boardingGate.SupportsLWTT;
+                    CFFT = boardingGate.SuppportsCFFT;
+                    DDJB = boardingGate.SupportsDDJB;
+                }
+            }
             var (origin, destination) = InputOriginAndDestination();
             var expectedTime = origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
             var status = InputFlightStatus();
             var specialRequestCode = InputSpecialRequestCode();
             switch (specialRequestCode)
             {
-                case "LWTT" : flight = (LWTTFlight)flight;
+                case "LWTT" : 
+                    if (LWTT)
+                    {
+                        airline.RemoveFlight(flight);
+                        new_flight = new LWTTFlight(flightNo, origin, destination, expectedTime, status);
+                        airline.AddFlight(new_flight);
+                        Console.WriteLine("Flight details updated...");
+                        Console.WriteLine(new_flight);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Current assigned gate does not support this flight request.");
+                    }
                     return;
-                case "DDJB" : flight = (DDJBFlight)flight;
+                case "DDJB" :
+                    if (DDJB)
+                    {
+                        airline.RemoveFlight(flight);
+                        new_flight = new DDJBFlight(flightNo, origin, destination, expectedTime, status);
+                        airline.AddFlight(new_flight);
+                        Console.WriteLine("Flight details updated...");
+                        Console.WriteLine(new_flight);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Current assigned gate does not support this flight request.");
+                    }
                     return;
-                case "CFFT" : flight = (CFFTFlight) flight;
+                case "CFFT" :
+                    if (CFFT)
+                    {
+                        airline.RemoveFlight(flight);
+                        new_flight = new CFFTFlight(flightNo, origin, destination, expectedTime, status);
+                        airline.AddFlight(new CFFTFlight(flightNo, origin, destination, expectedTime, status)); ;
+                        Console.WriteLine("Flight details updated...");
+                        Console.WriteLine(new_flight);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Current assigned gate does not support this flight request.");
+                    }
                     return;
-                case null : flight = (NORMFlight)flight;
+                case null :
+                    airline.RemoveFlight(flight);
+                    new_flight = new NORMFlight(flightNo, origin, destination, expectedTime, status);
+                    airline.AddFlight(new_flight);
+                    Console.WriteLine("Flight details updated...");
+                    Console.WriteLine(new_flight);
                     return;
-            };
-            Console.WriteLine("Flight details updated...");
-            Console.WriteLine(flight);
+            }
             return;
 
 
