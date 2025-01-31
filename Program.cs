@@ -50,6 +50,10 @@ while (true)
              DisplayScheduledFlights(terminal5);
             break;
         case "8":
+            Console.WriteLine();
+            ProcessAllUnassignedFlights(terminal5); 
+            break;
+        case "9":
             return;
         default:
             Console.WriteLine("Invalid choice; please try again.");
@@ -121,7 +125,15 @@ void DisplayBoardingGates(Terminal terminal)
     Console.WriteLine("Boarding Gate     DDJB    CFFT    LWTT    Flight Number");
     foreach (var boardinggate in terminal.BoardingGates.Values)
     {
-        Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}{boardinggate.Flight}");
+        if (boardinggate.Flight != null)
+        {
+            var flightNo = boardinggate.Flight.FlightNumber;
+            Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}{flightNo}");
+        }
+        else
+        {
+            Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}");
+        }
     }
 }
 
@@ -310,18 +322,125 @@ void ModifyFlightDetails(Terminal terminal)
         case "2":
             Console.WriteLine("Delete a flight...");
             var flightToDel = InputExistingAirlineFlightNumber(airline);
-            Console.Write("Are you sure? [Y/N]: ");
-            var confirmation = Console.ReadLine().ToUpper();
-            if (confirmation == "Y")
+            while (true)
             {
-                airline.RemoveFlight(flightToDel);
+                Console.Write("Are you sure? [Y/N]: ");
+                var confirmation = Console.ReadLine().ToUpper();
+                if (confirmation == "Y")
+                {
+                    airline.RemoveFlight(flightToDel);
+                    DisplayScheduledFlights(terminal);
+                    break;
+                }
+                else if (confirmation == "N")
+                {
+                    Console.WriteLine("Cancelled...");
+                    break;
+                }
+                Console.WriteLine("Invalid Input...");
             }
-            else
-            {
-                Console.WriteLine("Cancelled...");
-            }
-            DisplayScheduledFlights(terminal);
             return;
+    }
+}
+
+
+void ProcessAllUnassignedFlights(Terminal terminal)
+{
+    var flightQueue = new Queue<Flight>();
+    foreach (Flight flight in terminal.Flights.Values)
+    {
+        bool assigned = false;
+        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+        {
+            if(flight == boardingGate.Flight)
+            {
+                assigned = true;
+            }
+        }
+        if (!assigned)
+        {
+            flightQueue.Enqueue(flight);
+        }
+    }
+    Console.WriteLine($"Number of Boarding Gates without an assigned Flight: {flightQueue.Count}");
+    for (int i = 0; i < flightQueue.Count; i++)
+    {
+        string srcode = "";
+        var flight = flightQueue.Dequeue();
+        BoardingGate? assignedBoardingGate = null;
+        if (flight is LWTTFlight)
+        {
+            srcode = "LWTT";
+            foreach( BoardingGate boardingGate in terminal.BoardingGates.Values)
+            {
+                if (boardingGate.SupportsLWTT && boardingGate.Flight == null)
+                {
+                    boardingGate.Flight = flight;
+                    assignedBoardingGate = boardingGate;
+                    break;
+                }
+            }
+            if (assignedBoardingGate == null)
+            {
+                Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
+                flightQueue.Enqueue(flight);
+            }
+        }
+        if (flight is DDJBFlight)
+        {
+            srcode = "DDJB";
+            foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+            {
+                if (boardingGate.SupportsDDJB && boardingGate.Flight == null)
+                {
+                    boardingGate.Flight = flight;
+                    assignedBoardingGate = boardingGate;
+                    break;
+                }
+            }
+            if (assignedBoardingGate == null)
+            {
+                Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
+                flightQueue.Enqueue(flight);
+            }
+        }
+        if (flight is CFFTFlight)
+        {
+            srcode = "CFFT";
+            foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+            {
+                if (boardingGate.SuppportsCFFT && boardingGate.Flight == null)
+                {
+                    boardingGate.Flight = flight;
+                    assignedBoardingGate = boardingGate;
+                    break;
+                }
+            }
+            if (assignedBoardingGate == null)
+            {
+                Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
+                flightQueue.Enqueue(flight);
+            }
+        }
+        else
+        {
+            foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+            {
+                if (!boardingGate.SuppportsCFFT && !boardingGate.SupportsDDJB && !boardingGate.SupportsLWTT && boardingGate.Flight == null)
+                {
+                    boardingGate.Flight = flight;
+                    assignedBoardingGate = boardingGate;
+                    break;
+                }
+            }
+            if (assignedBoardingGate == null)
+            {
+                Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
+                flightQueue.Enqueue(flight);
+            }
+        }
+        Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time  SRC  Gate Name");
+        Console.WriteLine($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19} {flight.ExpectedTime,-32:HH:mm:} {srcode,-4} {assignedBoardingGate?.GateName ?? ""}");
     }
 }
 
@@ -516,7 +635,8 @@ void DisplayMenu()
     Console.WriteLine("6) Modify flight details");
     Console.WriteLine("7) Display scheduled flights in chronological order,");
     Console.WriteLine("   with boarding gates assignments where applicable");
-    Console.WriteLine("8) Exit");
+    Console.WriteLine("8) Process all unassigned flights to boarding gates");
+    Console.WriteLine("9) Exit");
     Console.WriteLine("------------------------------------------------------");
 }
 
