@@ -346,6 +346,8 @@ void ModifyFlightDetails(Terminal terminal)
 
 void ProcessAllUnassignedFlights(Terminal terminal)
 {
+    var pre_assignedCount = 0;
+    var methodAssigned = 0;
     var flightQueue = new Queue<Flight>();
     foreach (Flight flight in terminal.Flights.Values)
     {
@@ -355,6 +357,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
             if(flight == boardingGate.Flight)
             {
                 assigned = true;
+                pre_assignedCount++;
             }
         }
         if (!assigned)
@@ -362,8 +365,9 @@ void ProcessAllUnassignedFlights(Terminal terminal)
             flightQueue.Enqueue(flight);
         }
     }
-    Console.WriteLine($"Number of Boarding Gates without an assigned Flight: {flightQueue.Count}");
-    for (int i = 0; i < flightQueue.Count; i++)
+    int count = flightQueue.Count;
+    Console.WriteLine($"Number of Boarding Gates without an assigned Flight: {count}");
+    for (int i = 0; i < count; i++)
     {
         string srcode = "";
         var flight = flightQueue.Dequeue();
@@ -377,6 +381,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
                 {
                     boardingGate.Flight = flight;
                     assignedBoardingGate = boardingGate;
+                    methodAssigned++;
                     break;
                 }
             }
@@ -395,6 +400,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
                 {
                     boardingGate.Flight = flight;
                     assignedBoardingGate = boardingGate;
+                    methodAssigned++;
                     break;
                 }
             }
@@ -413,6 +419,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
                 {
                     boardingGate.Flight = flight;
                     assignedBoardingGate = boardingGate;
+                    methodAssigned++;
                     break;
                 }
             }
@@ -430,6 +437,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
                 {
                     boardingGate.Flight = flight;
                     assignedBoardingGate = boardingGate;
+                    methodAssigned++;
                     break;
                 }
             }
@@ -441,6 +449,16 @@ void ProcessAllUnassignedFlights(Terminal terminal)
         }
         Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time  SRC  Gate Name");
         Console.WriteLine($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19} {flight.ExpectedTime,-32:HH:mm:} {srcode,-4} {assignedBoardingGate?.GateName ?? ""}");
+    }
+    Console.WriteLine($"Number of Flights matched: {methodAssigned}");
+    if (pre_assignedCount != 0)
+    {
+        Console.WriteLine($"(Number of Flights assigned during the method / Number of Flights assigned before method ) %:{methodAssigned * 100.00 / pre_assignedCount}%");
+    }
+    else
+    {
+        Console.WriteLine($"Number of Flights assigned during the method : Number of Flights assigned before method");
+        Console.WriteLine($"{methodAssigned,44} : 0");
     }
 }
 
