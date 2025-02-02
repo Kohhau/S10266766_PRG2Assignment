@@ -156,9 +156,9 @@ void DisplayScheduledFlights(Terminal terminal)
     }
 }
 
-//=======================================
-// Data manipulation (feature 5, 6, 8)
-//=======================================
+//==========================================
+// Data manipulation (feature 5, 6, 8 & a)
+//==========================================
 
 void AssignBoardingGateToFlight(Terminal terminal)
 {
