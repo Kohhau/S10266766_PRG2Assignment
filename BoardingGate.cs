@@ -12,7 +12,7 @@ public class BoardingGate
     public bool SuppportsCFFT { get; set; }
     public bool SupportsDDJB { get; set; }
     public bool SupportsLWTT { get; set; }
-    public Flight Flight { get; set; }
+    public Flight? Flight { get; set; }
 
     public BoardingGate(string gateName, bool supportsDDJB, bool suppportsCFFT, bool supportsLWTT)
     {

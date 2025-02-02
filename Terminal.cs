@@ -43,7 +43,7 @@ public class Terminal
         // Map flight numbers to boarding gates
         var flightGates = BoardingGates
             .Where(kv => kv.Value.Flight != null)
-            .ToDictionary(kv => kv.Value.Flight.FlightNumber, kv => kv.Value);
+            .ToDictionary(kv => kv.Value.Flight!.FlightNumber, kv => kv.Value);
 
         // Check that all flights have been assigned boarding gates
         if (Flights.Values.Any(f => !flightGates.ContainsKey(f.FlightNumber)))

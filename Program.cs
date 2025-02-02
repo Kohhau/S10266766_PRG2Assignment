@@ -139,21 +139,7 @@ void DisplayBoardingGates(Terminal terminal)
 
 void DisplayFullFlightDetails(Terminal terminal)
 {
-    PrintAirlines(terminal);
-
-    Console.WriteLine();
-    var airline = terminal.Airlines[InputAirlineCode(terminal)];
-    var flights = airline.Flights.Values;
-
-    Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} Destination");
-    foreach (var f in flights)
-    {
-        Console.WriteLine($"{f.FlightNumber,-7} {airline.Name,-19} {f.Origin,-19} {f.Destination,-19}");
-    }
-
-    Console.WriteLine();
-    var flight = InputExistingAirlineFlightNumber(airline);
-
+    var flight = ChooseFlight(terminal);
     Console.WriteLine();
     PrintFullFlightInfo(terminal, flight);
 }
@@ -176,11 +162,13 @@ void DisplayScheduledFlights(Terminal terminal)
 
 void AssignBoardingGateToFlight(Terminal terminal)
 {
+    // Input a flight and display its specifications
     var flight = InputExistingFlightNumber(terminal);
     Console.WriteLine();
     PrintBasicFlightInfoWithSRC(terminal, flight);
     Console.WriteLine();
 
+    // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match"
     var gate = InputAvailableBoardingGate(terminal);
     gate.Flight = flight;
 
@@ -201,13 +189,17 @@ void CreateNewFlight(Terminal terminal)
 {
     int numFlightsAdded = 0;
     string continueChoice;
+
     do
     {
+        // Input the flight specifications
         var flightNo = InputNewFlightNumber(terminal);
         var (origin, destination) = InputOriginAndDestination();
         var expectedTime = origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
         var specialRequestCode = InputSpecialRequestCode();
+        // TODO: Ask for status / boarding gate?
 
+        // Create the flight
         Flight f = specialRequestCode switch
         {
             "LWTT" => new LWTTFlight(flightNo, origin, destination, expectedTime),
@@ -218,6 +210,7 @@ void CreateNewFlight(Terminal terminal)
         terminal.GetAirlineFromFlight(f).AddFlight(f);
         numFlightsAdded++;
 
+        // Append the new flight information to flights.csv
         using (var writer = new StreamWriter("flights.csv", append: true))
         {
             writer.WriteLine($"{f.FlightNumber},{f.Origin},{f.Destination},{f.ExpectedTime:hh:mm tt},{GetSpecialRequestCode(f) ?? ""}");
@@ -234,170 +227,31 @@ void CreateNewFlight(Terminal terminal)
 
 void ModifyFlightDetails(Terminal terminal)
 {
-    PrintAirlines(terminal);
-    var airline = terminal.Airlines[InputAirlineCode(terminal)];
-    var flights = airline.Flights.Values.ToList().Order();
-    Console.WriteLine();
-    Console.WriteLine("Flight  Airline name        Origin              Destination");
-    foreach (var f in flights)
-    {
-        Console.WriteLine($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19}");
-    }
+    var flight = ChooseFlight(terminal);
+    Console.WriteLine("\n[1] Modify Existing Flight\n[2] Delete Existing Flights");
+
     while (true)
     {
-        Console.WriteLine("\n[1] Modify Existing Flight\n[2] Delete Existing Flights");
-        Console.Write("Input choice: ");
+        Console.WriteLine();
+        Console.Write("Enter choice: ");
         switch (Console.ReadLine())
         {
             case "1":
                 Console.WriteLine();
-                var flight = InputExistingAirlineFlightNumber(airline);
-                var (origin, destination) = (flight.Origin, flight.Destination);
-                var expectedTime = flight.ExpectedTime;
-                var status = flight.Status;
-                BoardingGate? gate = null;
-                Flight new_flight;
-                var specialRequestCode = GetSpecialRequestCode(flight);
-                var flightNo = flight.FlightNumber;
-                foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
-                {
-                    if (boardingGate.Flight == flight)
-                    {
-                        gate = boardingGate;
-                    }
-                }
-                while (true)
-                {
-                    var option = "";
-                    while (true)
-                    {
-                        Console.WriteLine("\nSelect flight specification which you want to alter");
-                        Console.WriteLine("[1] Origin and Destination");
-                        Console.WriteLine("[2] Expected Departure/Arrival Time");
-                        Console.WriteLine("[3] Status");
-                        Console.WriteLine("[4] Special Request Code");
-                        Console.WriteLine("[5] Boarding Gate");
-                        Console.WriteLine();
-                        Console.Write("Choice: ");
-                        option = Console.ReadLine();
-                        if (option == "1" || option == "2" || option == "3" || option == "4" || option == "5")
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            Console.WriteLine("Invalid Input...");
-                        }
-                    }
-                    switch (option)
-                    {
-                        case "1":
-                            (origin, destination) = InputOriginAndDestination();
-                            break;
-                        case "2":
-                            expectedTime = origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
-                            break;
-                        case "3":
-                            status = InputFlightStatus();
-                            break;
-                        case "4":
-                            specialRequestCode = InputSpecialRequestCode();
-                            break;
-                        case "5":
-                            gate = InputAvailableBoardingGate(terminal);
-                            gate.Flight = flight;
-                            break;
-                    }
-                    Console.Write("\nDo you want to continue altering? [N] To Quit: ");
-                    var choice = Console.ReadLine().ToUpper();
-                    if (choice == "N")
-                    {
-                        break;
-                    }
-                }
-                switch (specialRequestCode)
-                {
-                    case "LWTT":
-                        airline.RemoveFlight(flight);
-                        new_flight = new LWTTFlight(flightNo, origin, destination, expectedTime, status);
-                        airline.AddFlight(new_flight);
-                        if (gate != null)
-                        {
-                            gate.Flight = new_flight;
-                        }
-                        Console.WriteLine("Flight details updated...");
-                        Console.WriteLine("\nFlight  Airline             Origin              Destination         Expected departure/arrival Time  Status    SRC      Gate");
-                        Console.Write($"{flightNo,-7} {airline.Name,-19} {origin,-19} {destination,-19} {expectedTime,-32:HH:mm} ");
-                        Console.WriteLine($"{status,-9} {GetSpecialRequestCode(new_flight) ?? "",-8} {GetBoardingGateForFlight(terminal, new_flight)?.GateName ?? ""}");
-                        return;
-                    case "DDJB":
-                        airline.RemoveFlight(flight);
-                        new_flight = new DDJBFlight(flightNo, origin, destination, expectedTime, status);
-                        airline.AddFlight(new_flight);
-                        if (gate != null)
-                        {
-                            gate.Flight = new_flight;
-                        }
-                        Console.WriteLine("Flight details updated...");
-                        Console.WriteLine("\nFlight  Airline             Origin              Destination         Expected departure/arrival Time  Status    SRC      Gate");
-                        Console.Write($"{flightNo,-7} {airline.Name,-19} {origin,-19} {destination,-19} {expectedTime,-32:HH:mm} ");
-                        Console.WriteLine($"{status,-9} {GetSpecialRequestCode(new_flight) ?? "",-8} {GetBoardingGateForFlight(terminal, new_flight)?.GateName ?? ""}");
-
-                        return;
-                    case "CFFT":
-                        airline.RemoveFlight(flight);
-                        new_flight = new CFFTFlight(flightNo, origin, destination, expectedTime, status);
-                        airline.AddFlight(new CFFTFlight(flightNo, origin, destination, expectedTime, status)); ;
-                        if (gate != null)
-                        {
-                            gate.Flight = new_flight;
-                        }
-                        Console.WriteLine("Flight details updated...");
-                        Console.WriteLine("\nFlight  Airline             Origin              Destination         Expected departure/arrival Time  Status    SRC      Gate");
-                        Console.Write($"{flightNo,-7} {airline.Name,-19} {origin,-19} {destination,-19} {expectedTime,-32:HH:mm} ");
-                        Console.WriteLine($"{status,-9} {GetSpecialRequestCode(new_flight) ?? "",-8} {GetBoardingGateForFlight(terminal, new_flight)?.GateName ?? ""}");
-                        return;
-                    case null:
-                        airline.RemoveFlight(flight);
-                        new_flight = new NORMFlight(flightNo, origin, destination, expectedTime, status);
-                        airline.AddFlight(new_flight);
-                        if (gate != null)
-                        {
-                            gate.Flight = new_flight;
-                        }
-                        Console.WriteLine("Flight details updated...");
-                        Console.WriteLine("\nFlight  Airline             Origin              Destination         Expected departure/arrival Time  Status    SRC      Gate");
-                        Console.Write($"{flightNo,-7} {airline.Name,-19} {origin,-19} {destination,-19} {expectedTime,-32:HH:mm} ");
-                        Console.WriteLine($"{status,-9} {GetSpecialRequestCode(new_flight) ?? "",-8} {GetBoardingGateForFlight(terminal, new_flight)?.GateName ?? ""}");
-                        return;
-                }
-
+                ModifyExistingFlight(terminal, flight);
+                Console.WriteLine();
+                PrintFullFlightInfo(terminal, flight);
                 return;
-
-
             case "2":
-                Console.WriteLine("Delete a flight...");
-                var flightToDel = InputExistingAirlineFlightNumber(airline);
-                while (true)
+                Console.WriteLine();
+                if (DeleteFlightWithConfirmation(terminal, flight))
                 {
-                    Console.Write("Are you sure? [Y/N]: ");
-                    var confirmation = Console.ReadLine().ToUpper();
-                    if (confirmation == "Y")
-                    {
-                        airline.RemoveFlight(flightToDel);
-                        DisplayScheduledFlights(terminal);
-                        break;
-                    }
-                    else if (confirmation == "N")
-                    {
-                        Console.WriteLine("Cancelled...");
-                        break;
-                    }
-                    Console.WriteLine("Invalid Input...");
+                    Console.WriteLine();
+                    DisplayScheduledFlights(terminal);
                 }
                 return;
             default:
-                Console.WriteLine("Invalid Input...");
+                Console.WriteLine("Invalid choice; please try again.");
                 break;
         }
     }
@@ -549,6 +403,24 @@ Flight InputExistingAirlineFlightNumber(Airline airline)
         if (airline.Flights.TryGetValue(flightNo, out var f)) return f;
         Console.WriteLine($"Flight not found for {airline.Code}; please try again.");
     }
+}
+
+Flight ChooseFlight(Terminal terminal)
+{
+    PrintAirlines(terminal);
+
+    Console.WriteLine();
+    var airline = terminal.Airlines[InputAirlineCode(terminal)];
+    var flights = airline.Flights.Values;
+
+    Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} Destination");
+    foreach (var f in flights)
+    {
+        Console.WriteLine($"{f.FlightNumber,-7} {airline.Name,-19} {f.Origin,-19} {f.Destination,-19}");
+    }
+
+    Console.WriteLine();
+    return InputExistingAirlineFlightNumber(airline);
 }
 
 BoardingGate InputAvailableBoardingGate(Terminal terminal)
@@ -704,6 +576,7 @@ void PrintBasicFlightInfoWithSRC(Terminal terminal, Flight flight)
 void PrintFullFlightInfo(Terminal terminal, Flight flight)
 {
     PrintBasicFlightInfoWithSRC(terminal, flight);
+    Console.WriteLine($"Status.................: {flight.Status}");
     Console.WriteLine($"Boarding gate..........: {GetBoardingGateForFlight(terminal, flight)?.GateName ?? "-"}");
 }
 
@@ -731,4 +604,108 @@ void PrintAirlines(Terminal terminal)
     {
         Console.WriteLine($"{airline.Code,-6}{airline.Name,-25}");
     }
+}
+
+void ModifyExistingFlight(Terminal terminal, Flight flight)
+{
+    while (true)
+    {
+        // Prompt the user to select the flight specification to modify
+        var option = "";
+        while (true)
+        {
+            Console.WriteLine("Select a flight specification to modify");
+            Console.WriteLine("[1] Origin and Destination");
+            Console.WriteLine("[2] Expected Departure/Arrival Time");
+            Console.WriteLine("[3] Status");
+            Console.WriteLine("[4] Special Request Code");
+            Console.WriteLine("[5] Boarding Gate");
+            Console.Write("\nEnter your choice: ");
+            option = Console.ReadLine();
+
+            if (option == "1" || option == "2" || option == "3" || option == "4" || option == "5")
+                break;
+
+            Console.WriteLine("Invalid choice; please try again.");
+        }
+
+        // Update the selected flight specification
+        Console.WriteLine();
+        switch (option)
+        {
+            case "1":
+                var (origin, destination) = InputOriginAndDestination();
+                flight.Origin = origin;
+                flight.Destination = destination;
+                break;
+            case "2":
+                flight.ExpectedTime = flight.Origin == "Singapore (SIN)" ? InputTime("departure") : InputTime("arrival");
+                break;
+            case "3":
+                flight.Status = InputFlightStatus();
+                break;
+            case "4":
+                // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match"
+                flight = ChangeFlightSRCode(terminal, flight, InputSpecialRequestCode());
+                break;
+            case "5":
+                // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match"
+                var oldGate = GetBoardingGateForFlight(terminal, flight);
+                var gate = InputAvailableBoardingGate(terminal);
+                gate.Flight = flight;
+
+                // Update the Flight reference in the previous Gate
+                if (oldGate != null) oldGate.Flight = null;
+                break;
+        }
+
+        Console.Write("\nContinue modifications? [N] to quit: ");
+        if (Console.ReadLine()?.ToUpper() == "N") break;
+    }
+}
+
+bool DeleteFlightWithConfirmation(Terminal terminal, Flight flight)
+{
+    while (true)
+    {
+        Console.Write("Are you sure? [Y/N]: ");
+        var confirmation = Console.ReadLine()?.ToUpper() ?? "";
+
+        if (confirmation == "Y")
+        {
+            terminal.GetAirlineFromFlight(flight).RemoveFlight(flight);
+            var gate = GetBoardingGateForFlight(terminal, flight);
+            if (gate != null) gate.Flight = null;
+            return true;
+        }
+        else if (confirmation == "N")
+        {
+            Console.WriteLine("Deletion cancelled.");
+            return false;
+        }
+
+        Console.WriteLine("Invalid choice; please try again.");
+    }
+}
+
+Flight ChangeFlightSRCode(Terminal terminal, Flight flight, string? newSRCode)
+{
+    // Construct the new Flight object
+    Flight newFlight = newSRCode switch
+    {
+        "LWTT" => new LWTTFlight(flight.FlightNumber, flight.Origin, flight.Destination, flight.ExpectedTime, flight.Status),
+        "DDJB" => new DDJBFlight(flight.FlightNumber, flight.Origin, flight.Destination, flight.ExpectedTime, flight.Status),
+        "CFFT" => new CFFTFlight(flight.FlightNumber, flight.Origin, flight.Destination, flight.ExpectedTime, flight.Status),
+        _ => new NORMFlight(flight.FlightNumber, flight.Origin, flight.Destination, flight.ExpectedTime, flight.Status)
+    };
+
+    // Update the Flight reference in the corresponding Airline
+    var airline = terminal.GetAirlineFromFlight(flight);
+    airline.Flights[flight.FlightNumber] = newFlight;
+
+    // Update the Flight reference in the corresponding BoardingGate
+    var gate = GetBoardingGateForFlight(terminal, flight);
+    if (gate != null) gate.Flight = newFlight;
+
+    return newFlight;
 }
