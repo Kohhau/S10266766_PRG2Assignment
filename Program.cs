@@ -39,7 +39,7 @@ while (true)
             break;
         case "5":
             Console.WriteLine();
-             DisplayFullFlightDetails(terminal5);
+            DisplayFullFlightDetails(terminal5);
             break;
         case "6":
             Console.WriteLine();
@@ -47,11 +47,11 @@ while (true)
             break;
         case "7":
             Console.WriteLine();
-             DisplayScheduledFlights(terminal5);
+            DisplayScheduledFlights(terminal5);
             break;
         case "8":
             Console.WriteLine();
-            ProcessAllUnassignedFlights(terminal5); 
+            ProcessAllUnassignedFlights(terminal5);
             break;
         case "9":
             Console.WriteLine();
@@ -117,7 +117,7 @@ void LoadFlights(Terminal terminal)
 //==================================================
 void DisplayBasicInformation(Terminal terminal)
 {
-    Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time");
+    Console.WriteLine($"{"Flight",-7} {"Airline",-19} {"Origin",-19} {"Destination",-19} Time");
 
     foreach (var a in terminal.Airlines.Values)
         foreach (var f in a.Flights.Values)
@@ -126,18 +126,14 @@ void DisplayBasicInformation(Terminal terminal)
 
 void DisplayBoardingGates(Terminal terminal)
 {
-    Console.WriteLine("Boarding Gate     DDJB    CFFT    LWTT    Flight Number");
-    foreach (var boardinggate in terminal.BoardingGates.Values)
+    Console.WriteLine("Gate  Supported SRCs    Flight");
+    foreach (var g in terminal.BoardingGates.Values)
     {
-        if (boardinggate.Flight != null)
-        {
-            var flightNo = boardinggate.Flight.FlightNumber;
-            Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}{flightNo}");
-        }
-        else
-        {
-            Console.WriteLine($"{boardinggate.GateName,-18}{boardinggate.SupportsDDJB,-8}{boardinggate.SuppportsCFFT,-8}{boardinggate.SupportsLWTT,-8}");
-        }
+        var supportedSRCs = new List<string>();
+        if (g.SupportsDDJB) supportedSRCs.Add("DDJB");
+        if (g.SuppportsCFFT) supportedSRCs.Add("CFFT");
+        if (g.SupportsLWTT) supportedSRCs.Add("LWTT");
+        Console.WriteLine($"{g.GateName,-6}{string.Join(", ", supportedSRCs),-18}{g.Flight?.FlightNumber ?? ""}");
     }
 }
 
@@ -253,7 +249,7 @@ void ModifyFlightDetails(Terminal terminal)
             case "1":
                 Console.WriteLine();
                 var flight = InputExistingAirlineFlightNumber(airline);
-                var (origin, destination) = (flight.Origin,flight.Destination);
+                var (origin, destination) = (flight.Origin, flight.Destination);
                 var expectedTime = flight.ExpectedTime;
                 var status = flight.Status;
                 BoardingGate? gate = null;
@@ -414,7 +410,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
         bool assigned = false;
         foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
         {
-            if(flight == boardingGate.Flight)
+            if (flight == boardingGate.Flight)
             {
                 assigned = true;
                 pre_assignedCount++;
@@ -436,7 +432,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
         if (flight is LWTTFlight)
         {
             srcode = "LWTT";
-            foreach( BoardingGate boardingGate in terminal.BoardingGates.Values)
+            foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
             {
                 if (boardingGate.SupportsLWTT && boardingGate.Flight == null)
                 {
