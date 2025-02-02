@@ -274,6 +274,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
     Console.WriteLine($"Found {numFlightlessGates} boarding gates without a flight.");
     Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} {"Destination",-19} {"Time",-6} {"SR code",-8} Gate");
 
+    // Dequeue each flight and attempt to assign it to a boarding gate
     while (gatelessFlights.Count > 0)
     {
         var flight = gatelessFlights.Dequeue();
@@ -632,6 +633,7 @@ Queue<Flight> QueueGatelessFlights(Terminal terminal)
 {
     var gatelessFlights = new Queue<Flight>();
 
+    // Enqueue all the flights that aren't assigned to a boarding gate
     foreach (var flight in terminal.Flights.Values)
     {
         var gate = GetBoardingGateForFlight(terminal, flight);
