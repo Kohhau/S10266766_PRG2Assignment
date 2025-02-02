@@ -653,21 +653,18 @@ Queue<Flight> QueueGatelessFlights(Terminal terminal)
         }
     }
 
-    if (flight is not NORMFlight)
+    if (flight is NORMFlight)
     {
-        Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
-        return (false, null);
-    }
-
-    // The question states that NORMFlights should only be assigned to gates don't support any SR codes.
-    // The following is an additional step because we deemed it illogical for empty gates to exist
-    // while having NORMFlights be unassigned.
-    foreach (var gate in terminal.BoardingGates.Values)
-    {
-        if (gate.Flight == null)
+        // The question states that NORMFlights should only be assigned to gates don't support any SR codes.
+        // The following is an additional step because we deemed it illogical for empty gates to exist
+        // while having NORMFlights be unassigned.
+        foreach (var gate in terminal.BoardingGates.Values)
         {
-            gate.Flight = flight;
-            return (true, gate);
+            if (gate.Flight == null)
+            {
+                gate.Flight = flight;
+                return (true, gate);
+            }
         }
     }
 
