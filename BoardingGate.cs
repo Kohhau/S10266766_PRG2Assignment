@@ -28,7 +28,8 @@ public class BoardingGate
 
     public double CalculateFees()
     {
-        return 0;  // TODO
+        // $300 base fee for all boarding gates
+        return 300;
     }
 
     public override string ToString()

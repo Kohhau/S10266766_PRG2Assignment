@@ -54,6 +54,9 @@ while (true)
             ProcessAllUnassignedFlights(terminal5); 
             break;
         case "9":
+            terminal5.PrintAirlineFees();
+            break;
+        case "0":
             return;
         default:
             Console.WriteLine("Invalid choice; please try again.");
@@ -108,9 +111,9 @@ void LoadFlights(Terminal terminal)
     }
 }
 
-//===============================================
-// Displaying information (feature 3, 4, 7 & 9)
-//===============================================
+//==================================================
+// Displaying information (feature 3, 4, 7, 9 & b)
+//==================================================
 void DisplayBasicInformation(Terminal terminal)
 {
     Console.WriteLine("Flight  Airline name        Origin              Destination         Expected departure/arrival time");
@@ -167,7 +170,7 @@ void DisplayScheduledFlights(Terminal terminal)
 }
 
 //=======================================
-// Data manipulation (feature 5, 6 & 8)
+// Data manipulation (feature 5, 6, 8)
 //=======================================
 
 void AssignBoardingGateToFlight(Terminal terminal)
@@ -343,7 +346,6 @@ void ModifyFlightDetails(Terminal terminal)
     }
 }
 
-
 void ProcessAllUnassignedFlights(Terminal terminal)
 {
     var pre_assignedCount = 0;
@@ -471,7 +473,7 @@ Flight InputExistingFlightNumber(Terminal terminal)
     while (true)
     {
         Console.Write("Enter flight number: ");
-        var flightNo = Console.ReadLine() ?? "";
+        var flightNo = Console.ReadLine()?.ToUpper() ?? "";
 
         if (terminal.Flights.TryGetValue(flightNo, out var f)) return f;
         Console.WriteLine("Flight not found; please try again.");
@@ -494,7 +496,7 @@ BoardingGate InputAvailableBoardingGate(Terminal terminal)
     while (true)
     {
         Console.Write("Enter boarding gate: ");
-        var gateName = Console.ReadLine() ?? "";
+        var gateName = Console.ReadLine()?.ToUpper() ?? "";
 
         if (terminal.BoardingGates.TryGetValue(gateName, out var g))
         {
@@ -533,7 +535,7 @@ string InputNewFlightNumber(Terminal terminal)
     while (true)
     {
         Console.Write("Enter flight number: ");
-        var flightNo = Console.ReadLine() ?? "";
+        var flightNo = Console.ReadLine()?.ToUpper() ?? "";
 
         if (!Regex.IsMatch(flightNo, @"^[A-Z]{2}\s\d{3}$"))
         {
@@ -654,7 +656,8 @@ void DisplayMenu()
     Console.WriteLine("7) Display scheduled flights in chronological order,");
     Console.WriteLine("   with boarding gates assignments where applicable");
     Console.WriteLine("8) Process all unassigned flights to boarding gates");
-    Console.WriteLine("9) Exit");
+    Console.WriteLine("9) Display the total fee per airline for the day");
+    Console.WriteLine("0) Exit");
     Console.WriteLine("------------------------------------------------------");
 }
 
