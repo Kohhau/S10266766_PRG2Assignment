@@ -169,8 +169,10 @@ void AssignBoardingGateToFlight(Terminal terminal)
     Console.WriteLine();
 
     // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match"
-    var gate = InputAvailableBoardingGate(terminal);
-    gate.Flight = flight;
+    var newGate = InputAvailableBoardingGate(terminal);
+    var oldGate = GetBoardingGateForFlight(terminal, flight);
+    if (oldGate != null) oldGate.Flight = null;
+    newGate.Flight = flight;
 
     Console.WriteLine();
     PrintFullFlightInfo(terminal, flight);
@@ -182,7 +184,7 @@ void AssignBoardingGateToFlight(Terminal terminal)
         Console.WriteLine();
     }
 
-    Console.WriteLine($"Gate {gate.GateName} assigned to {flight.FlightNumber} successfully");
+    Console.WriteLine($"Gate {newGate.GateName} assigned to {flight.FlightNumber} successfully");
 }
 
 void CreateNewFlight(Terminal terminal)
@@ -261,7 +263,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
 {
     bool assigned;
     var methodAssigned = 0;
-    var (flightQueue,preAssignedFlights) = SeparateUnassignedFlights(terminal);
+    var (flightQueue, preAssignedFlights) = SeparateUnassignedFlights(terminal);
     var pre_assignedCount = preAssignedFlights.Count();
     int count = flightQueue.Count;
     Console.WriteLine($"Number of Boarding Gates without an assigned Flight: {count}");
@@ -677,7 +679,7 @@ Flight ChangeFlightSRCode(Terminal terminal, Flight flight, string? newSRCode)
     return (flightQueue, preAssignedFlights);
 }
 
-(bool,BoardingGate?) AutoAssignFlight(Terminal terminal,Flight flight, string srcode)
+(bool, BoardingGate?) AutoAssignFlight(Terminal terminal, Flight flight, string srcode)
 {
     BoardingGate? assignedBoardingGate = null;
     if (srcode == "LWTT")
