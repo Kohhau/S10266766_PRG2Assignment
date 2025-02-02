@@ -638,34 +638,25 @@ Queue<Flight> QueueGatelessFlights(Terminal terminal)
 
 (bool, BoardingGate?) AutoAssignFlight(Terminal terminal, Flight flight)
 {
-    if (flight is not NORMFlight)
-    {
-        // Iterate over all the boarding gates to find an available gate that supports the flight's SR code
-        foreach (var gate in terminal.BoardingGates.Values)
-        {
-            if (gate.Flight == null && (
-                flight is DDJBFlight && gate.SupportsDDJB
-                || flight is CFFTFlight && gate.SuppportsCFFT
-                || flight is LWTTFlight && gate.SupportsLWTT
-            ))
-            {
-                gate.Flight = flight;
-                return (true, gate);
-            }
-        }
-
-        Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
-        return (false, null);
-    }
-
-    // Attempt to assign NORMFlights to gates that don't support any SR codes
+    // Iterate over all the boarding gates to find an available gate that supports the flight's SR code
     foreach (var gate in terminal.BoardingGates.Values)
     {
-        if (gate.Flight == null && !gate.SuppportsCFFT && !gate.SupportsDDJB && !gate.SupportsLWTT)
+        if (gate.Flight == null && (
+            flight is DDJBFlight && gate.SupportsDDJB
+            || flight is CFFTFlight && gate.SuppportsCFFT
+            || flight is LWTTFlight && gate.SupportsLWTT
+            || flight is NORMFlight && !gate.SupportsDDJB && !gate.SuppportsCFFT && !gate.SupportsLWTT
+        ))
         {
             gate.Flight = flight;
             return (true, gate);
         }
+    }
+
+    if (flight is not NORMFlight)
+    {
+        Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
+        return (false, null);
     }
 
     // The question states that NORMFlights should only be assigned to gates don't support any SR codes.
