@@ -18,7 +18,7 @@ while (true)
     if (!firstRun) Console.WriteLine();
     firstRun = false;
 
-    DisplayMenu();
+    PrintMenu();
     Console.Write("Enter choice: ");
     switch (Console.ReadLine())
     {
@@ -139,26 +139,30 @@ void DisplayBoardingGates(Terminal terminal)
 
 void DisplayFullFlightDetails(Terminal terminal)
 {
-    ListAirlines(terminal);
-    Airline airline = terminal.Airlines[InputAirLineCode()];
-    var flights = airline.Flights.Values.ToList().Order();
+    PrintAirlines(terminal);
 
-    Console.WriteLine("Flight  Airline name        Origin              Destination");
+    Console.WriteLine();
+    var airline = terminal.Airlines[InputAirlineCode(terminal)];
+    var flights = airline.Flights.Values;
+
+    Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} Destination");
     foreach (var f in flights)
     {
-        Console.WriteLine($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19}");
+        Console.WriteLine($"{f.FlightNumber,-7} {airline.Name,-19} {f.Origin,-19} {f.Destination,-19}");
     }
+
+    Console.WriteLine();
     var flight = InputExistingAirlineFlightNumber(airline);
-    Console.WriteLine("Flight  Airline name        Origin              Destination         Time   Status    SR code  Gate");
-    Console.Write($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19} {flight.ExpectedTime,-6:HH:mm} ");
-    Console.WriteLine($"{flight.Status,-9} {GetSpecialRequestCode(flight) ?? "",-8} {GetBoardingGateForFlight(terminal, flight)?.GateName ?? ""}");
+
+    Console.WriteLine();
+    PrintFullFlightInfo(terminal, flight);
 }
 
 void DisplayScheduledFlights(Terminal terminal)
 {
     var flights = terminal.Flights.Values.ToList().Order();
 
-    Console.WriteLine("Flight  Airline name        Origin              Destination         Time   Status    SR code  Gate");
+    Console.WriteLine($"{"Flight",-7} {"Airline",-19} {"Origin",-19} {"Destination",-19} {"Time",-6} {"Status",-9} {"SR code",-8} Gate");
     foreach (var f in flights)
     {
         Console.Write($"{f.FlightNumber,-7} {terminal.GetAirlineFromFlight(f).Name,-19} {f.Origin,-19} {f.Destination,-19} {f.ExpectedTime,-6:HH:mm} ");
@@ -174,15 +178,14 @@ void AssignBoardingGateToFlight(Terminal terminal)
 {
     var flight = InputExistingFlightNumber(terminal);
     Console.WriteLine();
-    DisplayFlightInfoWithSRC(terminal, flight);
+    PrintBasicFlightInfoWithSRC(terminal, flight);
     Console.WriteLine();
 
     var gate = InputAvailableBoardingGate(terminal);
     gate.Flight = flight;
 
     Console.WriteLine();
-    DisplayFlightInfoWithSRC(terminal, flight);
-    Console.WriteLine($"Boarding gate entered..: {gate.GateName}");
+    PrintFullFlightInfo(terminal, flight);
 
     Console.Write("\nUpdate flight status [Y/N]? ");
     if (Console.ReadLine()?.ToUpper() == "Y")
@@ -231,8 +234,8 @@ void CreateNewFlight(Terminal terminal)
 
 void ModifyFlightDetails(Terminal terminal)
 {
-    ListAirlines(terminal);
-    var airline = terminal.Airlines[InputAirLineCode()];
+    PrintAirlines(terminal);
+    var airline = terminal.Airlines[InputAirlineCode(terminal)];
     var flights = airline.Flights.Values.ToList().Order();
     Console.WriteLine();
     Console.WriteLine("Flight  Airline name        Origin              Destination");
@@ -535,15 +538,16 @@ Flight InputExistingFlightNumber(Terminal terminal)
         Console.WriteLine("Flight not found; please try again.");
     }
 }
+
 Flight InputExistingAirlineFlightNumber(Airline airline)
 {
     while (true)
     {
         Console.Write("Enter flight number: ");
-        var flightNo = Console.ReadLine() ?? "";
+        var flightNo = Console.ReadLine()?.ToUpper() ?? "";
 
         if (airline.Flights.TryGetValue(flightNo, out var f)) return f;
-        Console.WriteLine("Flight not found; please try again.");
+        Console.WriteLine($"Flight not found for {airline.Code}; please try again.");
     }
 }
 
@@ -651,20 +655,17 @@ string? InputSpecialRequestCode()
 
 }
 
-string InputAirLineCode()
+string InputAirlineCode(Terminal terminal)
 {
     string code = "";
     while (true)
     {
-        Console.Write("Input Flight Code...: ");
-        code = Console.ReadLine().ToUpper();
-        if (code.Length == 2) { break; }
-        else
-        {
-            Console.WriteLine("Invalid formatting");
-        }
+        Console.Write("Enter airline code: ");
+        code = Console.ReadLine()?.ToUpper() ?? "";
+        if (terminal.Airlines.ContainsKey(code)) return code;
+
+        Console.WriteLine("Airline code not found; please try again.");
     }
-    return code;
 }
 
 //===================
@@ -687,10 +688,10 @@ BoardingGate? GetBoardingGateForFlight(Terminal terminal, Flight flight)
     return terminal.BoardingGates.Values.FirstOrDefault(g => g.Flight == flight);
 }
 
-void DisplayFlightInfoWithSRC(Terminal terminal, Flight flight)
+void PrintBasicFlightInfoWithSRC(Terminal terminal, Flight flight)
 {
     Console.WriteLine($"Flight number..........: {flight.FlightNumber}");
-    Console.WriteLine($"Airline name...........: {terminal.GetAirlineFromFlight(flight).Name}");
+    Console.WriteLine($"Airline................: {terminal.GetAirlineFromFlight(flight).Name}");
     Console.WriteLine($"Origin.................: {flight.Origin}");
     Console.WriteLine($"Destination............: {flight.Destination}");
 
@@ -700,7 +701,13 @@ void DisplayFlightInfoWithSRC(Terminal terminal, Flight flight)
     Console.WriteLine($"Special request code...: {GetSpecialRequestCode(flight) ?? "-"}");
 }
 
-void DisplayMenu()
+void PrintFullFlightInfo(Terminal terminal, Flight flight)
+{
+    PrintBasicFlightInfoWithSRC(terminal, flight);
+    Console.WriteLine($"Boarding gate..........: {GetBoardingGateForFlight(terminal, flight)?.GateName ?? "-"}");
+}
+
+void PrintMenu()
 {
     Console.WriteLine("------------------------- MENU -----------------------");
     Console.WriteLine("1) List all flights with their basic information");
@@ -717,11 +724,11 @@ void DisplayMenu()
     Console.WriteLine("------------------------------------------------------");
 }
 
-void ListAirlines(Terminal terminal)
+void PrintAirlines(Terminal terminal)
 {
-    Console.WriteLine("Airline                  Code");
+    Console.WriteLine("Code  Airline");
     foreach (var airline in terminal.Airlines.Values)
     {
-        Console.WriteLine($"{airline.Name,-25}{airline.Code}");
+        Console.WriteLine($"{airline.Code,-6}{airline.Name,-25}");
     }
 }
