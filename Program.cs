@@ -264,11 +264,12 @@ void ProcessAllUnassignedFlights(Terminal terminal)
 {
     var gatelessFlights = QueueGatelessFlights(terminal);
     Console.WriteLine($"Found {gatelessFlights.Count} flights without a boarding gate.");
-    if (gatelessFlights.Count == 0) return;
+    if (gatelessFlights.Count == 0) return;  // Return if there are no flights to assign to boarding gates
 
     var numFlightsAlreadyAssigned = terminal.Flights.Count - gatelessFlights.Count;
     var numFlightlessGates = terminal.BoardingGates.Values.Select(g => g.Flight == null).Count();
     var numAssigned = 0;
+    var unassignableFlights = new List<string>();
 
     Console.WriteLine($"Found {numFlightlessGates} boarding gates without a flight.");
     Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} {"Destination",-19} {"Time",-6} {"SR code",-8} Gate");
@@ -278,6 +279,7 @@ void ProcessAllUnassignedFlights(Terminal terminal)
         var flight = gatelessFlights.Dequeue();
         var (assigned, assignedGate) = AutoAssignFlight(terminal, flight);
         if (assigned) numAssigned++;
+        else unassignableFlights.Add(flight.FlightNumber);
 
         Console.Write($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19}");
         Console.WriteLine($" {flight.ExpectedTime,-6:HH:mm} {GetSpecialRequestCode(flight),-8} {assignedGate?.GateName ?? ""}");
@@ -288,6 +290,9 @@ void ProcessAllUnassignedFlights(Terminal terminal)
         Console.WriteLine($"(# of flights assigned automatically / # of flights previously assigned) = {(numAssigned * 100.0 / numFlightsAlreadyAssigned):f2}%");
     else
         Console.WriteLine($"(# of flights assigned automatically : # of flights previously assigned) = {numAssigned} : 0");
+
+    if (unassignableFlights.Count > 0)
+        Console.WriteLine($"No boarding gates available for flights: {string.Join(", ", unassignableFlights)}");
 }
 
 //==================
@@ -668,7 +673,6 @@ Queue<Flight> QueueGatelessFlights(Terminal terminal)
         }
     }
 
-    Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
     return (false, null);
 
 }
