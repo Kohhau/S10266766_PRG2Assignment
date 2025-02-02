@@ -3,6 +3,7 @@
 // Student Name: Koh Hau
 // Partner Name: Haziq Hairil 
 //=============================
+
 namespace Assignment;
 
 public class BoardingGate
@@ -21,11 +22,6 @@ public class BoardingGate
         SupportsLWTT = supportsLWTT;
     }
 
-    public BoardingGate(Flight flight)
-    {
-        Flight = flight;
-    }
-
     public double CalculateFees()
     {
         // $300 base fee for all boarding gates
@@ -34,6 +30,6 @@ public class BoardingGate
 
     public override string ToString()
     {
-        return $"GateName: {GateName}\nSupports CFFT/DDJB/LWTT: {SuppportsCFFT}{SupportsDDJB}{SupportsLWTT}\nFlight: {Flight}";
+        return $"GateName: {GateName}\nSupports CFFT/DDJB/LWTT: {SuppportsCFFT}/{SupportsDDJB}/{SupportsLWTT}\nFlight: {Flight}";
     }
 }
