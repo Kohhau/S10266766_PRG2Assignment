@@ -168,7 +168,8 @@ void AssignBoardingGateToFlight(Terminal terminal)
     PrintBasicFlightInfoWithSRC(terminal, flight);
     Console.WriteLine();
 
-    // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match"
+    // Update the flight's boarding gate.
+    // "For Basic Features, there is no need to validate if the Special Request Codes between Flights and Boarding Gates match".
     var newGate = InputAvailableBoardingGate(terminal);
     var oldGate = GetBoardingGateForFlight(terminal, flight);
     if (oldGate != null) oldGate.Flight = null;
@@ -261,65 +262,32 @@ void ModifyFlightDetails(Terminal terminal)
 
 void ProcessAllUnassignedFlights(Terminal terminal)
 {
-    bool assigned;
-    var methodAssigned = 0;
-    var (flightQueue, preAssignedFlights) = SeparateUnassignedFlights(terminal);
-    var pre_assignedCount = preAssignedFlights.Count();
-    int count = flightQueue.Count;
-    Console.WriteLine($"Number of Boarding Gates without an assigned Flight: {count}");
-    Console.WriteLine("\nFlight  Airline name        Origin              Destination         Expected departure/arrival time  SRC      Gate Name");
-    for (int i = 0; i < count; i++)
+    var gatelessFlights = QueueGatelessFlights(terminal);
+    Console.WriteLine($"Found {gatelessFlights.Count} flights without a boarding gate.");
+    if (gatelessFlights.Count == 0) return;
+
+    var numFlightsAlreadyAssigned = terminal.Flights.Count - gatelessFlights.Count;
+    var numFlightlessGates = terminal.BoardingGates.Values.Select(g => g.Flight == null).Count();
+    var numAssigned = 0;
+
+    Console.WriteLine($"Found {numFlightlessGates} boarding gates without a flight.");
+    Console.WriteLine($"\n{"Flight",-7} {"Airline",-19} {"Origin",-19} {"Destination",-19} {"Time",-6} {"SR code",-8} Gate");
+
+    while (gatelessFlights.Count > 0)
     {
-        string srcode = "";
-        var flight = flightQueue.Dequeue();
-        BoardingGate? assignedBoardingGate = null;
-        if (flight is LWTTFlight)
-        {
-            srcode = "LWTT";
-            (assigned, assignedBoardingGate) = AutoAssignFlight(terminal, flight, srcode);
-            if (assigned)
-            {
-                methodAssigned++;
-            }
-        }
-        if (flight is DDJBFlight)
-        {
-            srcode = "DDJB";
-            (assigned, assignedBoardingGate) = AutoAssignFlight(terminal, flight, srcode);
-            if (assigned)
-            {
-                methodAssigned++;
-            }
-        }
-        if (flight is CFFTFlight)
-        {
-            srcode = "CFFT";
-            (assigned, assignedBoardingGate) = AutoAssignFlight(terminal, flight, srcode);
-            if (assigned)
-            {
-                methodAssigned++;
-            }
-        }
-        else if (flight is NORMFlight)
-        {
-            (assigned, assignedBoardingGate) = AutoAssignFlight(terminal, flight, srcode);
-            if (assigned)
-            {
-                methodAssigned++;
-            }
-        }
-        Console.WriteLine($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19} {flight.ExpectedTime,-32:HH:mm} {srcode,-8} {assignedBoardingGate?.GateName ?? ""}");
+        var flight = gatelessFlights.Dequeue();
+        var (assigned, assignedGate) = AutoAssignFlight(terminal, flight);
+        if (assigned) numAssigned++;
+
+        Console.Write($"{flight.FlightNumber,-7} {terminal.GetAirlineFromFlight(flight).Name,-19} {flight.Origin,-19} {flight.Destination,-19}");
+        Console.WriteLine($" {flight.ExpectedTime,-6:HH:mm} {GetSpecialRequestCode(flight),-8} {assignedGate?.GateName ?? ""}");
     }
-    Console.WriteLine($"\nNumber of Flights matched: {methodAssigned}");
-    if (pre_assignedCount != 0)
-    {
-        Console.WriteLine($"(Number of Flights assigned during the method / Number of Flights assigned before method ) %:{(methodAssigned * 100.00 / pre_assignedCount):f2}%");
-    }
+
+    Console.WriteLine($"\nAssigned {numAssigned} flights to boarding gates.");
+    if (numFlightsAlreadyAssigned != 0)
+        Console.WriteLine($"(# of flights assigned automatically / # of flights previously assigned) = {(numAssigned * 100.0 / numFlightsAlreadyAssigned):f2}%");
     else
-    {
-        Console.WriteLine($"Number of Flights assigned during the method : Number of Flights assigned before method");
-        Console.WriteLine($"{methodAssigned,44} : 0");
-    }
+        Console.WriteLine($"(# of flights assigned automatically : # of flights previously assigned) = {numAssigned} : 0");
 }
 
 //==================
@@ -655,104 +623,64 @@ Flight ChangeFlightSRCode(Terminal terminal, Flight flight, string? newSRCode)
     return newFlight;
 }
 
-(Queue<Flight>, Queue<Flight>) SeparateUnassignedFlights(Terminal terminal)
+Queue<Flight> QueueGatelessFlights(Terminal terminal)
 {
-    var preAssignedFlights = new Queue<Flight>();
-    var flightQueue = new Queue<Flight>();
-    foreach (Flight flight in terminal.Flights.Values)
-    {
-        bool assigned = false;
-        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
-        {
-            if (flight == boardingGate.Flight)
-            {
-                assigned = true;
-                preAssignedFlights.Enqueue(flight);
-            }
-        }
-        if (!assigned)
-        {
-            flightQueue.Enqueue(flight);
-        }
+    var gatelessFlights = new Queue<Flight>();
 
+    foreach (var flight in terminal.Flights.Values)
+    {
+        var gate = GetBoardingGateForFlight(terminal, flight);
+        if (gate == null) gatelessFlights.Enqueue(flight);
     }
-    return (flightQueue, preAssignedFlights);
+
+    return gatelessFlights;
 }
 
-(bool, BoardingGate?) AutoAssignFlight(Terminal terminal, Flight flight, string srcode)
+(bool, BoardingGate?) AutoAssignFlight(Terminal terminal, Flight flight)
 {
-    BoardingGate? assignedBoardingGate = null;
-    if (srcode == "LWTT")
+    if (flight is not NORMFlight)
     {
-        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
+        // Iterate over all the boarding gates to find an available gate that supports the flight's SR code
+        foreach (var gate in terminal.BoardingGates.Values)
         {
-            if (boardingGate.SupportsLWTT && boardingGate.Flight == null)
+            if (gate.Flight == null && (
+                flight is DDJBFlight && gate.SupportsDDJB
+                || flight is CFFTFlight && gate.SuppportsCFFT
+                || flight is LWTTFlight && gate.SupportsLWTT
+            ))
             {
-                boardingGate.Flight = flight;
-                assignedBoardingGate = boardingGate;
-                return (true, assignedBoardingGate);
-            }
-        }
-        Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
-        return (false, assignedBoardingGate);
-    }
-    if (srcode == "DDJB")
-    {
-        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
-        {
-            if (boardingGate.SupportsDDJB && boardingGate.Flight == null)
-            {
-                boardingGate.Flight = flight;
-                assignedBoardingGate = boardingGate;
-                return (true, assignedBoardingGate);
-            }
-        }
-        Console.WriteLine($"No boarding gates available for Flight{flight.FlightNumber}");
-        return (false, assignedBoardingGate);
-
-    }
-    if (srcode == "CFFT")
-    {
-        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
-        {
-            if (boardingGate.SuppportsCFFT && boardingGate.Flight == null)
-            {
-                boardingGate.Flight = flight;
-                assignedBoardingGate = boardingGate;
-                return (true, assignedBoardingGate);
+                gate.Flight = flight;
+                return (true, gate);
             }
         }
 
-        Console.WriteLine($"No boarding gates available for Flight {flight.FlightNumber}");
-        return (false, assignedBoardingGate);
+        Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
+        return (false, null);
     }
-    else
-    {
-        foreach (BoardingGate boardingGate in terminal.BoardingGates.Values)
-        {
-            if (!boardingGate.SuppportsCFFT && !boardingGate.SupportsDDJB && !boardingGate.SupportsLWTT && boardingGate.Flight == null)
-            {
-                boardingGate.Flight = flight;
-                assignedBoardingGate = boardingGate;
-                return (true, assignedBoardingGate);
-            }
-            // question stem states that NORMFlight should only be checked against gates with ( False False False SRC support )
-            // this is an additional added step because we deemed it illogical for empty gates to exist and have a NORMFlight be unassigned
-            if (assignedBoardingGate == null)
-            {
-                foreach (BoardingGate boardingGate2ndCheck in terminal.BoardingGates.Values)
-                {
-                    if (boardingGate2ndCheck.Flight == null)
-                    {
-                        boardingGate2ndCheck.Flight = flight;
-                        assignedBoardingGate = boardingGate2ndCheck;
-                        return (true, assignedBoardingGate);
-                    }
-                }
 
-            }
+    // Attempt to assign NORMFlights to gates that don't support any SR codes
+    foreach (var gate in terminal.BoardingGates.Values)
+    {
+        if (gate.Flight == null && !gate.SuppportsCFFT && !gate.SupportsDDJB && !gate.SupportsLWTT)
+        {
+            gate.Flight = flight;
+            return (true, gate);
         }
-        Console.WriteLine($"No boarding gates available for Flight {flight.FlightNumber}");
-        return (false, assignedBoardingGate);
     }
+
+    // The question states that NORMFlights should only be assigned to gates don't support any SR codes.
+    // The following is an additional step because we deemed it illogical for empty gates to exist
+    // while having NORMFlights be unassigned.
+    foreach (var gate in terminal.BoardingGates.Values)
+    {
+        if (gate.Flight == null)
+        {
+            gate.Flight = flight;
+            return (true, gate);
+        }
+    }
+
+    Console.WriteLine($"No boarding gates available for flight {flight.FlightNumber}");
+    return (false, null);
+
 }
