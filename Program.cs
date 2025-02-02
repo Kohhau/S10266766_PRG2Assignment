@@ -54,6 +54,7 @@ while (true)
             ProcessAllUnassignedFlights(terminal5); 
             break;
         case "9":
+            Console.WriteLine();
             terminal5.PrintAirlineFees();
             break;
         case "0":

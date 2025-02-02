@@ -52,40 +52,56 @@ public class Terminal
             return;
         }
 
-        Console.WriteLine("Airline");
+        var aggFeeSubtotal = 0.0;
+        var aggDiscountSubtotal = 0.0;
 
+        // Display the table
+        Console.WriteLine("Airline             Fee subtotal  Discount subtotal  Total fee");
         foreach (var a in Airlines.Values)
         {
-            var fee = a.CalculateFees();  // Accumulate fees for arrival, departure, and special request codes
-            var discount = 0.0;
+            var feeSubtotal = a.CalculateFees();  // Accumulate fees for arrival, departure, and special request codes
+            var discountSubtotal = 0.0;
 
+            // Accumulate per-flight fees and discounts
             foreach (var f in a.Flights.Values)
             {
                 // Accumulate fees for boarding gates
-                fee += flightGates[f.FlightNumber].CalculateFees();
+                feeSubtotal += flightGates[f.FlightNumber].CalculateFees();
 
                 // $110 discount for each flight arriving/departing before 11am or after 9pm
                 if (f.ExpectedTime.TimeOfDay > new TimeSpan(21, 0, 0) || f.ExpectedTime.TimeOfDay < new TimeSpan(11, 0, 0))
-                    discount += 110;
+                    discountSubtotal += 110;
 
                 // $25 discount for each flight with the Origin of Dubai (DXB), Bangkok (BKK) or Tokyo (NRT)
                 if (f.Origin == "Dubai (DXB)" || f.Origin == "Bangkok (BKK)" || f.Origin == "Tokyo (NRT)")
-                    discount += 25.00;
+                    discountSubtotal += 25;
 
                 // $50 discount for each flight not indicating any Special Request Codes
-                if (f is NORMFlight) discount += 50.00;
+                if (f is NORMFlight) discountSubtotal += 50;
             }
 
             // 3% discount for more than 5 flights arriving/departing.
             // Note that this has to be applied after `fee` is fully calculated.
-            if (a.Flights.Count > 5) discount += fee * 0.03;
+            if (a.Flights.Count > 5) discountSubtotal += feeSubtotal * 0.03;
 
             // $350 discount for every 3 flights arriving/departing
-            discount += (Flights.Count / 3) * 350.00;
+            discountSubtotal += (a.Flights.Count / 3) * 350.00;
 
-            Console.WriteLine($"{a.Name,-19} Fee subtotal: ${fee:0.00}");
-            Console.WriteLine($"               Discount subtotal: ${discount:0.00}");
+            var totalFee = feeSubtotal - discountSubtotal;
+            Console.WriteLine($"{a.Name,-19}    ${feeSubtotal,8:0.00}          ${discountSubtotal,8:0.00}  ${totalFee,8:0.00}");
+
+            aggFeeSubtotal += feeSubtotal;
+            aggDiscountSubtotal += discountSubtotal;
         }
+
+        var aggTotalFee = aggFeeSubtotal - aggDiscountSubtotal;
+
+        // Dsiplay details of aggregated fees and discounts
+        Console.WriteLine();    
+        Console.WriteLine($"{"Subtotal of all airline fees:",51} ${aggFeeSubtotal,9:0.00}");
+        Console.WriteLine($"{"Subtotal of all airline discounts:",51} ${aggDiscountSubtotal,9:0.00}");
+        Console.WriteLine($"{"Final total of all airline fees:",51} ${aggTotalFee,9:0.00}");
+        Console.WriteLine($"{"Total discount rate:",51} {aggDiscountSubtotal / aggTotalFee * 100,9:0.0}%");
     }
 
 

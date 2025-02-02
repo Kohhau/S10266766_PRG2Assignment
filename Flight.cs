@@ -13,7 +13,6 @@ public abstract class Flight: IComparable<Flight>
     public string Destination { get; set; }
     public DateTime ExpectedTime { get; set; }
     public string Status { get; set; }
-    protected readonly double baseFee = 300.00;
 
     protected Flight(string flightNumber, string origin, string destination, DateTime expectedTime)
     {
@@ -38,7 +37,7 @@ public abstract class Flight: IComparable<Flight>
     public virtual double CalculateFees()
     {
         // $500 fee for arriving flights, $800 fee for departing flights
-        return baseFee + Origin == "Singapore (SIN)" ? 800.00 : 500.00;
+        return Origin == "Singapore (SIN)" ? 800 : 500;
     }
 
     public override string ToString()
