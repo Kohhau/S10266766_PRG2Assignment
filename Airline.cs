@@ -3,6 +3,7 @@
 // Student Name: Koh Hau
 // Partner Name: Haziq Hairil 
 //=============================
+
 namespace Assignment;
 
 public class Airline
